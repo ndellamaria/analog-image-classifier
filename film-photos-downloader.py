@@ -116,6 +116,6 @@ if __name__ == "__main__":
     
     # Download images (optionally specify a limit)
     downloader.run(
-        num_images=None,  # Set to None to download all available
+        num_images=200,  # Set to None to download all available
         delay=1  # Seconds between API requests
     )
