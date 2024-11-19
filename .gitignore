@@ -1,0 +1,6 @@
+.DS_Store
+test_images/*
+test_augmented_images/*
+raw_images/*
+augmented_images/*
+augmented_images.zip

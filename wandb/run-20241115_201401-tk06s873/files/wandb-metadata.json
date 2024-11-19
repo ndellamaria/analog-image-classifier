@@ -1,0 +1,39 @@
+{
+  "os":  "macOS-14.4-arm64-arm-64bit",
+  "python":  "3.9.6",
+  "startedAt":  "2024-11-16T01:14:01.046718Z",
+  "program":  "/Users/nataliedellamaria/dev/shutter-speed/film-processing/model.py",
+  "codePath":  "film-processing/model.py",
+  "git":  {
+    "remote":  "git@github.com:ndellamaria/shutter-speed.git",
+    "commit":  "8b9a2b6f6fd6e3f568d4bd8b183c3c3cae95bca9"
+  },
+  "email":  "nrdell3@gmail.com",
+  "root":  "/Users/nataliedellamaria/dev/shutter-speed/film-processing",
+  "host":  "MacBook-Pro-44.local",
+  "username":  "nataliedellamaria",
+  "executable":  "/Library/Developer/CommandLineTools/usr/bin/python3",
+  "codePathLocal":  "model.py",
+  "cpu_count":  11,
+  "cpu_count_logical":  11,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "194058641408"
+    }
+  },
+  "memory":  {
+    "total":  "19327352832"
+  },
+  "cpu":  {
+    "count":  11,
+    "countLogical":  11
+  },
+  "apple":  {
+    "name":  "Apple M3 Pro",
+    "ecpuCores":  6,
+    "pcpuCores":  5,
+    "gpuCores":  14,
+    "memoryGb":  18
+  }
+}

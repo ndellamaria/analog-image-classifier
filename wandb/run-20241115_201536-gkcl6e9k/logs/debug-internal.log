@@ -1,0 +1,17 @@
+{"time":"2024-11-15T20:15:36.935088-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2024-11-15T20:15:36.935187-05:00","level":"INFO","msg":"created symlink","path":"/Users/nataliedellamaria/dev/shutter-speed/film-processing/wandb/run-20241115_201536-gkcl6e9k/logs/debug-core.log"}
+{"time":"2024-11-15T20:15:37.049235-05:00","level":"INFO","msg":"created new stream","id":"gkcl6e9k"}
+{"time":"2024-11-15T20:15:37.049278-05:00","level":"INFO","msg":"stream: started","id":"gkcl6e9k"}
+{"time":"2024-11-15T20:15:37.049358-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:15:37.049445-05:00","level":"INFO","msg":"sender: started","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:15:37.049445-05:00","level":"INFO","msg":"handler: started","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:15:37.268949-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-11-15T20:19:44.277729-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-11-15T20:19:44.280669-05:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-11-15T20:19:45.279385-05:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"saving job artifact","runtime_seconds":0.811306625},{"desc":"uploading model.keras","runtime_seconds":0.786110875,"progress":"13.2MB/96.6MB"}],"total_operations":2}}
+{"time":"2024-11-15T20:19:54.985609-05:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-11-15T20:19:56.157305-05:00","level":"INFO","msg":"stream: closing","id":"gkcl6e9k"}
+{"time":"2024-11-15T20:19:56.15741-05:00","level":"INFO","msg":"handler: closed","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:19:56.157439-05:00","level":"INFO","msg":"sender: closed","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:19:56.157426-05:00","level":"INFO","msg":"writer: Close: closed","stream_id":"gkcl6e9k"}
+{"time":"2024-11-15T20:19:56.15856-05:00","level":"INFO","msg":"stream: closed","id":"gkcl6e9k"}
