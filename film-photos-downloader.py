@@ -7,11 +7,10 @@ from tqdm import tqdm
 import time
 
 class AnalogImageDownloader:
-    def __init__(self, output_dir='raw_images', page_size=100):
+    def __init__(self, output_dir='raw_images', page_size=200):
         self.base_url = 'https://api.analogdb.com'
         self.output_dir = output_dir
         self.page_size = page_size
-        self.current_page = 10
         os.makedirs(output_dir, exist_ok=True)
 
     def fetch_posts(self):
@@ -19,8 +18,7 @@ class AnalogImageDownloader:
         Fetch posts from the API.
         """
         params = {
-            'page_size': self.page_size,
-            'page_id': self.current_page
+            'page_size': self.page_size
         }
             
         try:
@@ -73,21 +71,16 @@ class AnalogImageDownloader:
                 desc="Downloading raw images"
             ))
 
-    def run(self, num_images=None, delay=1):
+    def run(self, delay=1):
         """
         Run the downloader to fetch and download images.
         
         Args:
-            num_images: Optional limit on number of images to download
             delay: Delay between API requests in seconds
         """
         images_downloaded = 0
         
         while True:
-            # Check if we've hit the requested limit
-            if num_images and images_downloaded >= num_images:
-                break
-                
             # Fetch posts
             data = self.fetch_posts()
             if not data:
@@ -116,6 +109,5 @@ if __name__ == "__main__":
     
     # Download images (optionally specify a limit)
     downloader.run(
-        num_images=200,  # Set to None to download all available
         delay=1  # Seconds between API requests
     )
