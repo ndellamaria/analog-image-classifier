@@ -4,6 +4,9 @@ import numpy as np
 from PIL import Image
 import io
 import os
+import base64
+import json
+import time as time_module
 import requests
 from flask_cors import CORS
 from runwayml import RunwayML
@@ -17,6 +20,12 @@ print("Loaded model")
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 RUNWAY_API_KEY    = os.environ.get('RUNWAY_API_KEY', '')
+GITHUB_TOKEN      = os.environ.get('GITHUB_TOKEN', '')
+GITHUB_REPO       = 'ndellamaria/ndellamaria.github.io'
+GITHUB_API        = 'https://api.github.com'
+
+def gh():
+    return {'Authorization': f'token {GITHUB_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
 
 def process_image(image_bytes):
     try:
@@ -99,6 +108,80 @@ def runway_task_status(task_id):
         return jsonify(result)
     except Exception as e:
         print("Runway task error:", e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/github/add-photo', methods=['POST'])
+def github_add_photo():
+    if not GITHUB_TOKEN:
+        return jsonify({'error': 'GitHub token not configured'}), 500
+    try:
+        data      = request.json
+        image_b64 = data['image_base64']
+        filename  = data['filename']
+        meta      = data.get('meta', {})
+
+        # 1. Get main branch SHA
+        r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/git/ref/heads/main', headers=gh())
+        r.raise_for_status()
+        main_sha = r.json()['object']['sha']
+
+        # 2. Create branch
+        safe = filename.replace(' ', '-').rsplit('.', 1)[0][:40]
+        branch = f'film-lab/{safe}-{int(time_module.time())}'
+        r = requests.post(f'{GITHUB_API}/repos/{GITHUB_REPO}/git/refs', headers=gh(),
+                          json={'ref': f'refs/heads/{branch}', 'sha': main_sha})
+        r.raise_for_status()
+
+        # 3. Upload image to pics/
+        r = requests.put(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{filename}', headers=gh(),
+                         json={'message': f'Add {filename}', 'content': image_b64, 'branch': branch})
+        r.raise_for_status()
+
+        # 4. Get portfolio-photos.json + SHA
+        r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh())
+        r.raise_for_status()
+        jf       = r.json()
+        photos   = json.loads(base64.b64decode(jf['content'].replace('\n', '')).decode('utf-8'))
+        json_sha = jf['sha']
+
+        # 5. Append new photo
+        month_names = ['January','February','March','April','May','June','July',
+                       'August','September','October','November','December']
+        photos.append({
+            'filename': filename,
+            'alt':      meta.get('title', ''),
+            'video':    None,
+            'location': meta.get('location', ''),
+            'month':    meta.get('month', ''),
+            'year':     meta.get('year', ''),
+        })
+
+        # 6. Update portfolio-photos.json
+        updated = base64.b64encode(json.dumps(photos, indent=2).encode()).decode()
+        r = requests.put(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh(),
+                         json={'message': 'Add photo to portfolio manifest',
+                               'content': updated, 'sha': json_sha, 'branch': branch})
+        r.raise_for_status()
+
+        # 7. Open PR
+        m  = meta.get('month', '')
+        y  = meta.get('year', '')
+        mn = month_names[int(m)-1] if m else ''
+        date_str = ' '.join(filter(None, [mn, y]))
+        body_lines = [f'📍 {meta["location"]}' if meta.get('location') else None,
+                      f'📅 {date_str}'         if date_str              else None,
+                      f'🎞 "{meta["title"]}"'  if meta.get('title')     else None]
+        pr_body = '\n'.join(l for l in body_lines if l) or 'New photo added via Film Lab.'
+
+        r = requests.post(f'{GITHUB_API}/repos/{GITHUB_REPO}/pulls', headers=gh(),
+                          json={'title': f'Add to portfolio: {meta.get("title") or filename}',
+                                'body': pr_body, 'head': branch, 'base': 'main'})
+        r.raise_for_status()
+        pr = r.json()
+        return jsonify({'pr_url': pr['html_url'], 'pr_number': pr['number'], 'branch': branch})
+
+    except Exception as e:
+        print('GitHub PR error:', e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
