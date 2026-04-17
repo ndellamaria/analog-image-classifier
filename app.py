@@ -139,22 +139,21 @@ def github_add_photo():
                           json={'ref': f'refs/heads/{branch}', 'sha': main_sha})
         r.raise_for_status()
 
-        # 3. Upload each image to pics/, each video to videos/
-        for p in photo_list:
-            r = requests.put(
-                f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{p["filename"]}',
-                headers=gh(),
-                json={'message': f'Add {p["filename"]}', 'content': p['image_base64'], 'branch': branch}
-            )
+        def gh_put(path, message, content):
+            """PUT a file; fetch existing SHA first if the file already exists."""
+            payload = {'message': message, 'content': content, 'branch': branch}
+            existing_r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/{path}', headers=gh())
+            if existing_r.status_code == 200:
+                payload['sha'] = existing_r.json()['sha']
+            r = requests.put(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/{path}', headers=gh(), json=payload)
             r.raise_for_status()
 
+        # 3. Upload each image to pics/, each video to videos/
+        for p in photo_list:
+            gh_put(f'pics/{p["filename"]}', f'Add {p["filename"]}', p['image_base64'])
+
             if p.get('video_base64') and p.get('video_filename'):
-                r = requests.put(
-                    f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/videos/{p["video_filename"]}',
-                    headers=gh(),
-                    json={'message': f'Add video {p["video_filename"]}', 'content': p['video_base64'], 'branch': branch}
-                )
-                r.raise_for_status()
+                gh_put(f'videos/{p["video_filename"]}', f'Add video {p["video_filename"]}', p['video_base64'])
 
         # 4. Get portfolio-photos.json + SHA
         r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh())
