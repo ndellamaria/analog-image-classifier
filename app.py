@@ -144,7 +144,7 @@ def github_add_photo():
                           json={'ref': f'refs/heads/{branch}', 'sha': main_sha})
         r.raise_for_status()
 
-        # 3. Upload each image (and video if present) to pics/
+        # 3. Upload each image to pics/, each video to videos/
         for p in photo_list:
             r = requests.put(
                 f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{p["filename"]}',
@@ -155,7 +155,7 @@ def github_add_photo():
 
             if p.get('video_base64') and p.get('video_filename'):
                 r = requests.put(
-                    f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{p["video_filename"]}',
+                    f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/videos/{p["video_filename"]}',
                     headers=gh(),
                     json={'message': f'Add video {p["video_filename"]}', 'content': p['video_base64'], 'branch': branch}
                 )
