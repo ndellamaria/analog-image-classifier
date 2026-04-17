@@ -206,8 +206,10 @@ def github_add_photo():
         print('GitHub PR error:', e)
         return jsonify({'error': str(e)}), 500
 
-@app.route('/health', methods=['GET'])
+@app.route('/health', methods=['GET', 'OPTIONS'])
 def health():
+    if request.method == 'OPTIONS':
+        return '', 204
     return jsonify({"status": "Healthy"}), 200
 
 @app.route('/test', methods=['GET'])
