@@ -115,67 +115,91 @@ def github_add_photo():
     if not GITHUB_TOKEN:
         return jsonify({'error': 'GitHub token not configured'}), 500
     try:
-        data      = request.json
-        image_b64 = data['image_base64']
-        filename  = data['filename']
-        meta      = data.get('meta', {})
+        data        = request.json
+        photo_list  = data.get('photos', [])
+        if not photo_list:
+            return jsonify({'error': 'No photos provided'}), 400
+
+        month_names = ['January','February','March','April','May','June','July',
+                       'August','September','October','November','December']
 
         # 1. Get main branch SHA
         r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/git/ref/heads/main', headers=gh())
         r.raise_for_status()
         main_sha = r.json()['object']['sha']
 
-        # 2. Create branch
-        safe = filename.replace(' ', '-').rsplit('.', 1)[0][:40]
-        branch = f'film-lab/{safe}-{int(time_module.time())}'
+        # 2. Create a single branch for all photos
+        first_safe = photo_list[0]['filename'].replace(' ', '-').rsplit('.', 1)[0][:30]
+        branch = f'film-lab/{first_safe}-{int(time_module.time())}'
         r = requests.post(f'{GITHUB_API}/repos/{GITHUB_REPO}/git/refs', headers=gh(),
                           json={'ref': f'refs/heads/{branch}', 'sha': main_sha})
         r.raise_for_status()
 
-        # 3. Upload image to pics/
-        r = requests.put(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{filename}', headers=gh(),
-                         json={'message': f'Add {filename}', 'content': image_b64, 'branch': branch})
-        r.raise_for_status()
+        # 3. Upload each image (and video if present) to pics/
+        for p in photo_list:
+            r = requests.put(
+                f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{p["filename"]}',
+                headers=gh(),
+                json={'message': f'Add {p["filename"]}', 'content': p['image_base64'], 'branch': branch}
+            )
+            r.raise_for_status()
+
+            if p.get('video_base64') and p.get('video_filename'):
+                r = requests.put(
+                    f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/pics/{p["video_filename"]}',
+                    headers=gh(),
+                    json={'message': f'Add video {p["video_filename"]}', 'content': p['video_base64'], 'branch': branch}
+                )
+                r.raise_for_status()
 
         # 4. Get portfolio-photos.json + SHA
         r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh())
         r.raise_for_status()
         jf       = r.json()
-        photos   = json.loads(base64.b64decode(jf['content'].replace('\n', '')).decode('utf-8'))
+        existing = json.loads(base64.b64decode(jf['content'].replace('\n', '')).decode('utf-8'))
         json_sha = jf['sha']
 
-        # 5. Append new photo
-        month_names = ['January','February','March','April','May','June','July',
-                       'August','September','October','November','December']
-        photos.append({
-            'filename': filename,
-            'alt':      meta.get('title', ''),
-            'video':    None,
-            'location': meta.get('location', ''),
-            'month':    meta.get('month', ''),
-            'year':     meta.get('year', ''),
-        })
+        # 5. Append all new entries
+        for p in photo_list:
+            meta = p.get('meta', {})
+            existing.append({
+                'filename': p['filename'],
+                'alt':      meta.get('title', ''),
+                'video':    p.get('video_filename'),
+                'location': meta.get('location', ''),
+                'month':    meta.get('month', ''),
+                'year':     meta.get('year', ''),
+            })
 
-        # 6. Update portfolio-photos.json
-        updated = base64.b64encode(json.dumps(photos, indent=2).encode()).decode()
+        # 6. Update portfolio-photos.json in one commit
+        updated = base64.b64encode(json.dumps(existing, indent=2).encode()).decode()
         r = requests.put(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh(),
-                         json={'message': 'Add photo to portfolio manifest',
+                         json={'message': f'Add {len(photo_list)} photo(s) to portfolio manifest',
                                'content': updated, 'sha': json_sha, 'branch': branch})
         r.raise_for_status()
 
-        # 7. Open PR
-        m  = meta.get('month', '')
-        y  = meta.get('year', '')
-        mn = month_names[int(m)-1] if m else ''
-        date_str = ' '.join(filter(None, [mn, y]))
-        body_lines = [f'📍 {meta["location"]}' if meta.get('location') else None,
-                      f'📅 {date_str}'         if date_str              else None,
-                      f'🎞 "{meta["title"]}"'  if meta.get('title')     else None]
-        pr_body = '\n'.join(l for l in body_lines if l) or 'New photo added via Film Lab.'
+        # 7. Open one PR describing all photos
+        pr_title = (f'Add to portfolio: {photo_list[0]["meta"].get("title") or photo_list[0]["filename"]}'
+                    if len(photo_list) == 1
+                    else f'Add {len(photo_list)} photos to portfolio')
 
+        body_sections = []
+        for p in photo_list:
+            meta     = p.get('meta', {})
+            m, y     = meta.get('month', ''), meta.get('year', '')
+            mn       = month_names[int(m)-1] if m else ''
+            date_str = ' '.join(filter(None, [mn, y]))
+            lines    = [
+                f'**{meta["title"]}**'   if meta.get('title')    else f'**{p["filename"]}**',
+                f'📍 {meta["location"]}' if meta.get('location') else None,
+                f'📅 {date_str}'         if date_str             else None,
+                f'🎞 Animated'           if p.get('video_filename') else None,
+            ]
+            body_sections.append('\n'.join(l for l in lines if l))
+
+        pr_body = '\n\n---\n\n'.join(body_sections) or 'New photos added via Film Lab.'
         r = requests.post(f'{GITHUB_API}/repos/{GITHUB_REPO}/pulls', headers=gh(),
-                          json={'title': f'Add to portfolio: {meta.get("title") or filename}',
-                                'body': pr_body, 'head': branch, 'base': 'main'})
+                          json={'title': pr_title, 'body': pr_body, 'head': branch, 'base': 'main'})
         r.raise_for_status()
         pr = r.json()
         return jsonify({'pr_url': pr['html_url'], 'pr_number': pr['number'], 'branch': branch})
