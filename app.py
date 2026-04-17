@@ -15,7 +15,6 @@ input_name = session.get_inputs()[0].name
 print("Loaded model")
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-ALLOWED_ORIGIN    = 'https://ndellamaria.github.io'
 
 def process_image(image_bytes):
     try:
@@ -48,11 +47,6 @@ def predict():
 
 @app.route('/anthropic/messages', methods=['POST'])
 def proxy_anthropic():
-    origin = request.headers.get('Origin', '')
-    print(f"Proxy request from origin: '{origin}'")
-    if ALLOWED_ORIGIN not in origin and 'localhost' not in origin:
-        print(f"Blocked origin: '{origin}'")
-        return jsonify({'error': 'Forbidden'}), 403
     if not ANTHROPIC_API_KEY:
         return jsonify({'error': 'API key not configured on server'}), 500
     try:
