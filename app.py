@@ -8,11 +8,9 @@ import base64
 import json
 import time as time_module
 import requests
-from flask_cors import CORS
 from runwayml import RunwayML
 
 app = Flask(__name__)
-CORS(app)
 
 @app.after_request
 def add_cors(response):
