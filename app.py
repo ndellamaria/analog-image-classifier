@@ -6,6 +6,7 @@ import io
 import os
 import requests
 from flask_cors import CORS
+from runwayml import RunwayML
 
 app = Flask(__name__)
 CORS(app)
@@ -15,6 +16,7 @@ input_name = session.get_inputs()[0].name
 print("Loaded model")
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+RUNWAY_API_KEY    = os.environ.get('RUNWAY_API_KEY', '')
 
 def process_image(image_bytes):
     try:
@@ -63,6 +65,40 @@ def proxy_anthropic():
         return Response(resp.content, status=resp.status_code, mimetype='application/json')
     except Exception as e:
         print("Proxy error:", e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/runway/generate', methods=['POST'])
+def runway_generate():
+    if not RUNWAY_API_KEY:
+        return jsonify({'error': 'Runway API key not configured'}), 500
+    try:
+        data   = request.json
+        client = RunwayML(api_key=RUNWAY_API_KEY)
+        task   = client.image_to_video.create(
+            model='gen3a_turbo',
+            prompt_image=data.get('prompt_image'),
+            prompt_text=data.get('prompt_text', ''),
+        )
+        return jsonify({'task_id': task.id})
+    except Exception as e:
+        print("Runway generate error:", e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/runway/task/<task_id>', methods=['GET'])
+def runway_task_status(task_id):
+    if not RUNWAY_API_KEY:
+        return jsonify({'error': 'Runway API key not configured'}), 500
+    try:
+        client = RunwayML(api_key=RUNWAY_API_KEY)
+        task   = client.tasks.retrieve(task_id)
+        result = {'status': task.status}
+        if task.status == 'SUCCEEDED' and task.output:
+            result['video_url'] = task.output[0]
+        elif task.status == 'FAILED':
+            result['error'] = getattr(task, 'failure_reason', 'Generation failed')
+        return jsonify(result)
+    except Exception as e:
+        print("Runway task error:", e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
