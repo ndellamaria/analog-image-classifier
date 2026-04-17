@@ -129,9 +129,6 @@ def github_add_photo():
         if not photo_list:
             return jsonify({'error': 'No photos provided'}), 400
 
-        month_names = ['January','February','March','April','May','June','July',
-                       'August','September','October','November','December']
-
         # 1. Get main branch SHA
         r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/git/ref/heads/main', headers=gh())
         r.raise_for_status()
@@ -175,9 +172,6 @@ def github_add_photo():
                 'filename': p['filename'],
                 'alt':      meta.get('title', ''),
                 'video':    p.get('video_filename'),
-                'location': meta.get('location', ''),
-                'month':    meta.get('month', ''),
-                'year':     meta.get('year', ''),
             })
 
         # 6. Update portfolio-photos.json in one commit
@@ -194,15 +188,10 @@ def github_add_photo():
 
         body_sections = []
         for p in photo_list:
-            meta     = p.get('meta', {})
-            m, y     = meta.get('month', ''), meta.get('year', '')
-            mn       = month_names[int(m)-1] if m else ''
-            date_str = ' '.join(filter(None, [mn, y]))
-            lines    = [
-                f'**{meta["title"]}**'   if meta.get('title')    else f'**{p["filename"]}**',
-                f'📍 {meta["location"]}' if meta.get('location') else None,
-                f'📅 {date_str}'         if date_str             else None,
-                f'🎞 Animated'           if p.get('video_filename') else None,
+            meta  = p.get('meta', {})
+            lines = [
+                f'**{meta["title"]}**' if meta.get('title') else f'**{p["filename"]}**',
+                '🎞 Animated'          if p.get('video_filename') else None,
             ]
             body_sections.append('\n'.join(l for l in lines if l))
 
