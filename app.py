@@ -48,7 +48,10 @@ def predict():
 
 @app.route('/anthropic/messages', methods=['POST'])
 def proxy_anthropic():
-    if request.headers.get('Origin', '') != ALLOWED_ORIGIN:
+    origin = request.headers.get('Origin', '')
+    print(f"Proxy request from origin: '{origin}'")
+    if ALLOWED_ORIGIN not in origin and 'localhost' not in origin:
+        print(f"Blocked origin: '{origin}'")
         return jsonify({'error': 'Forbidden'}), 403
     if not ANTHROPIC_API_KEY:
         return jsonify({'error': 'API key not configured on server'}), 500
