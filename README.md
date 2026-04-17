@@ -17,3 +17,8 @@ This repo contains a model to evaluate film photographs, inspired by a personal 
 - [ ] Model sweep using W&B to tune parameters
 - [ ] Deploy API 
 - [ ] Integrate with web portfolio to automate classification and posting of newly developed film roles  
+- [ ] Animate photos with Runway
+- [ ] Adjust confidence thresholds for filtering
+- [ ] Provide labeling feedback to model
+- [ ] Add ability to add location/label to photo
+- [ ] Auto download from email
