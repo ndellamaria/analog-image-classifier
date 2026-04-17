@@ -152,8 +152,11 @@ def github_add_photo():
         for p in photo_list:
             gh_put(f'pics/{p["filename"]}', f'Add {p["filename"]}', p['image_base64'])
 
-            if p.get('video_base64') and p.get('video_filename'):
-                gh_put(f'videos/{p["video_filename"]}', f'Add video {p["video_filename"]}', p['video_base64'])
+            if p.get('video_url') and p.get('video_filename'):
+                vid_r = requests.get(p['video_url'], timeout=60)
+                vid_r.raise_for_status()
+                video_b64 = base64.b64encode(vid_r.content).decode()
+                gh_put(f'videos/{p["video_filename"]}', f'Add video {p["video_filename"]}', video_b64)
 
         # 4. Get portfolio-photos.json + SHA
         r = requests.get(f'{GITHUB_API}/repos/{GITHUB_REPO}/contents/portfolio-photos.json', headers=gh())
